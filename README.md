@@ -135,6 +135,8 @@ fast path. An escape hatch is provided: compile with
 * `docs/PCSXBox_frameskip_HOWTO.txt` explains how to turn **frameskip off** (so
   the FPS counter reflects real work rather than a skipped frame) and clarifies
   where the relevant options actually live in the R3 menu.
+* `docs/PCSXBox_stg_format_zh.md` —— 逐个字段解释每游戏 `.stg` 设置文件
+  （以 Raiden Project 为例，含偏移、取值与实测推断）。
 * `ANALYSIS_BASELINE3.md`, `ANALYSIS_OPT1.md` and `ANALYSIS_OPT2.md` in the
   project directory record the baseline and the two optimisation steps.
 
