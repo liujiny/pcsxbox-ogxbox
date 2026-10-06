@@ -1,0 +1,90 @@
+﻿PCSXBox (OG Xbox) -- 优化 A/B 对比测试须知
+==========================================
+
+一、四个包是什么关系(按这个顺序测)
+----------------------------------
+ 1) PCSXBox_chd1            = 对照基线(CONTROL)。只有 CHD,没有任何性能改动。
+                              你实机验收过:Captain Commando / RE3 CHD / Raiden CHD 都正常。
+ 2) PCSXBox_optA_softinline = 基线 + 改动 A:GPU 软件光栅器 13 个每像素函数强制内联。
+                              (改 src\gpu\src\soft.c 一个文件;对 2D 密集画面收益最大)
+ 3) PCSXBox_optB_branchtest = 改动 A + 改动 B:dynarec 基本块出口内联 psxBranchTest。
+                              (多改 3 个 ir3000a.c;CPU 重的场景收益大)
+ 4) PCSXBox_optB_prof       = 和 3) 内容完全一样,只是多了每帧 cpu/rast/blit 计时 overlay。
+                              这是诊断包,不要当最终版本用。
+
+对比出的差值含义:
+  chd1 -> optA    = 改动 A 的净收益(光栅器)
+  optA -> optB    = 改动 B 的净收益(dynarec),因为 optB 是在 A 之上再加的
+
+二、怎么测
+----------
+1. 先把你现在能跑的那个游戏目录里的 default.xbe / default14.xbe / default16.xbe
+   备份一份(方便随时回退),然后把某个 opt 包里的这三个 .xbe 覆盖进去。
+   只需要覆盖这 3 个文件,BIOS / EMUSKINS / PSXCDS / 存档 / .stg 都不用动。
+2. 三个 opt 包互相切换时,同样只覆盖这 3 个 .xbe。
+
+三、先把这三项设置好(设置一次,写进该游戏的 .stg,以后自动生效)
+--------------------------------------------------------------
+(1) 想看到 FPS 数字(这一项确实在 R3 菜单里)
+      R3 -> "In Game Options" -> "Configuration" -> "General Settings"
+      (第 1 页,共 2 页) -> "Show FPS? Yes/No" 按 A 切成 Yes
+      注意: 这一页只有 "Throttle/Fast Forward Speed" 和 "Slowdown Delay",
+            没有 Throttle Method, 也没有 Frameskip。别在这一页找。
+
+  (2) 让 frame skip 真正 = 0   <<< 关键, 不在 R3 菜单里
+      "Game Configuration" 是"启动游戏之前"才出现的画面, 不是 R3 菜单的子页。
+      进法: 在游戏列表里把光标停在目标游戏上, 按 X(不是 A) 启动它。
+        src\..\common\commonfuncs.cpp:9940
+          emuLaunch(selectedGame, menuChoice==0,
+                    g_Gamepads[0].bPressedAnalogButtons[XINPUT_GAMEPAD_X]) ;
+      (doSelectGame 里 A 和 X 都是"确认", 所以按 X 时 forceConfig=1,
+       就会先弹 Game Configuration。)
+
+      然后在 Game Configuration 里(共 24 行):
+        - 第 6 行  "Set graphics fixes"  -> 按 A 进入
+        - 找到     "Frameskip"          -> 按 A 切换, 直到显示 Off
+        - 按 B 返回, 再按 B 退出整个 Game Configuration
+          (退出时 doConfigureGame 会 saveSettings(), 写进该游戏的 .stg)
+      退出后游戏才开始运行, 之后一直是不跳帧。
+
+      关于 Throttle Method(第 9 行): 想切 Fixed 也行, 但不是必须。
+        src\gpu\src\cfg.c:1552   UseFrameSkip = xbox_get_frameskip() ;   <- GPUopen/ReadConfig 读一次
+        src\gpu\src\gpu.c:721    if ( g_psxFixFF ) UseFrameSkip = xbox_get_frameskip() ;
+      只有 Throttle Method = Fixed 时第 721 行才每帧重读。Frameskip 值本身在游戏启动时
+      就已经被 cfg.c:1552 读进去了, 所以"只把 Frameskip 切成 Off"就足够。
+
+      其它进 Game Configuration 的办法(任选其一):
+        - 该游戏还没有 .stg 时, loadSettings() 返回 1, 启动会自动进配置画面。
+        - 把 PCSXBOX 存档目录(默认 E:\SAVES\PCSXBOX)里的 <游戏名>.stg 先备份再改名,
+          下次启动同样会自动进配置画面。
+      .stg 是结构体裸写, 不要用文本编辑器手改。
+
+  (3) 设置改完、退回到游戏画面后, 确认 FPS 数字还在显示。
+
+四、测什么
+----------
+同一台机器、同一个游戏(Raiden Project CHD)、同一个存盘/同一关,最好是"屏幕上
+元素最密集"的那一段(弹幕/敌机最满),每种构建各停住看 30 秒左右,记录:
+  * 密集场景下的 FPS 数字(主要指标)
+  * 空闲/普通场景的 FPS(用来确认没有变慢)
+
+然后换上 optB_prof,在同一个密集场景读那一行:
+      cpu=  xxx ms   rast= xxx ms   blit= xxx ms
+(cpu = 两次 vblank 之间纯模拟 PSX CPU 的时间;rast = GPU_updateLace() 总时间,
+ 含软件光栅+贴图上传+Present 等待;blit = render_to_texture() 时间,不含 vsync 等待)
+
+五、把结果告诉我
+----------------
+请回:每个包在密集场景的 FPS + prof 那三个数字。
+下一步改哪里由这三个数字决定:
+  cpu 最大  -> 继续做 dynarec
+  rast 最大 -> 继续做 src\gpu\src\soft.c 的精灵内层循环
+  blit 最大 -> 做显示路径(删冗余 Clear / 贴图直写)
+
+注意:Present() 每帧都在等 vblank,所以 FPS 上限恒为 60。若三项之和已经贴着
+16.67ms,说明该场景已经撞到 vsync 上限,要靠关 frameskip 才能真正看到差异。
+
+六、回退
+--------
+任何一步不确定,把第一步备份的那 3 个 .xbe 覆盖回去即可回到现在的状态。
+对照基线就是 Release\PCSXBox_chd1 里的那三个 .xbe。

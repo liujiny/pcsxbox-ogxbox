@@ -1,0 +1,50 @@
+; gpuPeopsSoft.def : Declares the module parameters for the DLL.
+
+LIBRARY      "gpuPeopsSoft"
+DESCRIPTION  'gpuPeopsSoft GPU Windows Dynamic Link Library'
+EXPORTS
+    ; Explicit exports can go here
+	PSEgetLibType		@2
+	PSEgetLibName		@3
+	PSEgetLibVersion	@4
+	GPUinit				@5
+	GPUshutdown			@6
+	GPUopen				@7
+	GPUclose			@8
+	GPUconfigure		@9
+	GPUabout			@10
+	GPUtest				@11
+	GPUwriteData		@12
+	GPUwriteStatus		@13
+	GPUreadData			@14
+	GPUreadStatus		@15
+	GPUdmaChain			@16
+	GPUgetMode			@17
+	GPUsetMode			@18
+	GPUupdateLace		@19
+	GPUmakeSnapshot     @20
+    GPUwriteDataMem     @21
+    GPUreadDataMem      @22
+    GPUdisplayText      @23
+    GPUdisplayFlags     @24
+	GPUfreeze			@25
+    GPUshowScreenPic	@26
+    GPUgetScreenPic		@27
+
+	GPU_Update			@28
+	GP1_Read			@29
+	GP0_Read			@30
+	GP0_Write			@31
+	GP1_Write			@32
+	GPU_Open			@33
+	GPU_Close			@34
+	GPU_ScreenShot		@35
+	GPU_DmaExec			@36
+	GPU_Configure		@37
+	GPU_LoadState		@38
+	GPU_SaveState		@39
+    GPU_About           @40
+
+    GPUcursor        	@41
+
+    ;GPUdebugSetPC		@42

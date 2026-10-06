@@ -1,0 +1,22 @@
+ Translating PCSX
+ ----------------
+
+Just some small notes for translators.
+
+PCSX translations are based on the gettext library:
+http://www.gnu.org/software/gettext.
+The main file to translate is pcsx.po located at the
+'Intl' dir, note that you must place the translated
+strings over the msgstr and leave untouched the msgid.
+To test the translation use the 'msgfmt' utility to
+convert the translated pcsx.po file to a pcsx.mo file
+(ie. 'msgfmt pcsx.po -o pcsx.mo'), after translating
+the file please send it to us and please ask before
+translating it, maybe someone has already started it 
+for your language.
+
+If you have any problems contact us and we'll try to 
+help you.
+
+     linuzappz
+

@@ -1,0 +1,9 @@
+#pragma once
+
+typedef enum
+{
+    WAVEBANK_PSXBANK_SELECT = 0,
+    WAVEBANK_PSXBANK_LINEMOVE = 1,
+} WAVEBANK_PSXBANK;
+
+#define WAVEBANK_PSXBANK_ENTRY_COUNT 2

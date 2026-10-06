@@ -1,0 +1,201 @@
+PCSXBox - PSX Emulator for XBox v2
+
+
+What's New :
+ - Used new PCSX 1.5 source code
+ - CDDA playback
+ - Multi-disc support (go to options menu, then press Y to load new disc)
+ - Added more CPU options :
+    + Disable XA sound processing
+    + Always enable SIO IRQ
+    + Black and White movies (speed up movies)
+    + Disable CDDA
+    + Use CPU interpreter (slower, but possibly more compatible)
+    + Always enable SPU IRQ
+    + InuYasha Sengoku Battle fix (might fix other games as well)
+    
+
+Here's What's New from the v1.5 PCSX sources :
+   * Added translation support, thanks to Zydio. 
+   * Fixed several compatibility issues. 
+   * Improved NetPlay code, added NETsetInfo, thanks to JNS. 
+   * Fixed SW Ints, thanks to Xeven. 
+   * Fixed Mdecs timing issues, thanks to Xeven. 
+   * Fixed a bug related to Memcards in Xenogears. 
+   * Decode_XA.c now uses fixed point, 
+   * added NEGCON type to plugins.c/PsxBios.c
+   * added a mingw32 port (yokota). 
+   * Added preliminary MacOSX code (Stefhane Conversy). 
+   * Fixed bug in CreateMcd (kitaro). 
+   * Added a 'NO PIC' image. 
+   * Pcsx now compiles without a recompiler. 
+   * Same small speedups. 
+   * Fixed RTPS/RTPT SXYP fifo issue, thanks to Xeven. 
+   * VSync now has a Start and a End ;), thanks to Pete. 
+
+
+If anyone is able to successfully fiddle with all the options to get Ape Escape
+working on PCSX for Windows (or Linux or any other non-XBox platform), then please 
+let me know and I'll look into adding analog support.  
+
+Thanks again to Linuzappz and Pete Bernert for making the source available.
+Obviously this port would not exist without these people.  
+
+Stella, Gnuboy, SMSPlus, FCEUltra, HUGO, NeoPop, DGen, Bochs, HUGO-CD, FMSXBox,
+Bliss, WinSTon, Gens, Z26, StepmaniaX, PCSXBox....what's next?
+
+
+Enjoy!
+
+
+-----------------------------------------------------------------------
+
+PCSXBox - PSX Emulator for XBox v1
+
+http://xport.xb-power.com
+
+http://www.pcsx.net/
+
+What's New :
+ - Emulates Playstation
+ - Memory Card manager (select from 10 memory cards)
+ - Save states (LTRIGGER+BLACK and LTRIGGER+WHITE)
+ - Cheat code searching
+ - Gameshark code-compatible
+ - Gameshark cheat code database with codes for over 1700 games
+ - Remappable PSX buttons
+ - Throttle/speed-up
+ - Supports BIN files or GZIP'd BIN files.  (GZIP is not the same as ZIP)
+ - Background - Thanks to CandyISO for the background image 
+ - True Type Font - Thanks to CandyISO for this PSX font
+ - MP3 support
+ - XPort's Configurable PlayThing :)
+
+
+-----------------------------------------------------------------------
+
+
+Press Y from the main menu for help.
+Press LTHUMB from main menu for Configuration
+Press RTHUMB from main menu to switch between CDROM Drive and Hard Drive
+Press LTHUMB during gameplay for the options menu
+
+
+-----------------------------------------------------------------------
+
+
+Many thanks go out to the PCSX team for this great emulator and also to
+Jens Duttke for his Gameshark cheat code database.
+
+Also thanks to Lantus for helping me with the PAL issues I was having.  
+Hopefully PAL users will be able to enjoy this just as much as NTSC users.
+
+Further thanks to CandyISO for providing the background and TTF font.
+
+
+-----------------------------------------------------------------------
+
+
+
+This version does not support real CDs.  There are a different set of technical
+hurdles involved with PSX cds than with SegaCD and PCE CD/SCD.  I was finally
+able to get the XBox to read XA sectors, but it reads them much too slowly
+for anyone to want to play games using it.  (Reads about 2.5KB per second)
+
+For now, create BIN/CUE's of your PSX games and either copy them to your HD or
+burn them to DVDR/CDRW.  Your BIN and CUE files should have the same names:
+
+For example:
+
+GAMENAME.BIN
+GAMENAME.CUE
+
+is a valid combination and
+
+GAMENAME01.BIN
+GAMENAME.CUE
+
+is not.
+
+Furthermore, if you use GZIP to compress your BIN image, you will end up with
+a filename like
+
+GAMENAME.BIN.GZ
+
+This means that you need to rename your CUE file to be:
+
+GAMENAME.BIN.CUE
+
+or you could rename the GZ file so that the two files are:
+
+GAMENAME.GZ
+GAMENAME.CUE
+
+make sense?
+
+
+-----------------------------------------------------------------------
+
+
+A note about GZIP'ing your images.  Yes, they will work, but you will suffer
+a performance hit because there's no "true" direct access to any position in
+the file.  Let's say the game is reading sectors 1 to 100 - it'll read them
+lickity-split, but then when it requests, say, sector 30000 is has to scan through
+and do some processing on sectors 100 to 30000 before it can read the data instead
+of just jumping directly to that spot and reading.  This is the nature of compression.
+No, cacheing of data does not help in this case.  So, in a nutshell, compression
+is supported, but I advise against it unless you run from the HD and have replaced
+the standard XBox HD with a faster one.
+
+You can make an XBox ISO with a BIN/CUE image on it, burn it to a disc, run PCSXBox 
+from the HD, then press the RTHUMB button to get a listing of files on the disc.
+This is to make upgrading easier for those who prefer to keep BIN/CUE images
+on disc instead of on the HD.  
+
+
+-----------------------------------------------------------------------
+
+
+When you select the BIN file to load, you will be presented with an options menu.
+You can start the game using one of two different BIOS methods.  Using an actual
+BIOS file for the emulation is the most compatible, however it's a little slower
+than HLE.  Try both and see which one works best for the game you're playing.
+
+
+-----------------------------------------------------------------------
+
+
+There is also a section for changing the graphics options.  If the game you want
+to play has graphics problems or isn't displaying graphics (but you can hear sound)
+then you might want to try fiddling with some of the graphics options.  There is
+also a specific CPU option in this section for fixing Parasite Eve and Vandal 
+Hearts 1 and 2.
+
+
+-----------------------------------------------------------------------
+
+
+Also on this options menu is the memory card manager.  From this section,
+you can change the memory cards that are in slots one and two.  You have ten
+different cards you can use.  Please note that changing the card number
+while playing a game *does not* switch the actual memory card that the game is
+using.  
+
+
+------------------------------
+XPort's Configurable PlayThing
+------------------------------
+
+This is part of a project I did many years ago that fiddles with 
+curves and trajectories.  I thought it would look nice on the XBox.  You
+be the judge.  :)  Move the character with the Left Analog stick and fire
+using the B button.
+(Hint - fiddle with the X and Y Multipliers on the "Squiggle" effect.)
+
+
+
+Stella, Gnuboy, SMSPlus, FCEUltra, HUGO, NeoPop, DGen, Bochs, HUGO-CD, FMSXBox,
+Bliss, WinSTon, Gens, Z26, StepmaniaX, PCSXBox....what's next?
+
+
+Enjoy!

@@ -1,0 +1,47 @@
+# ---------------------------------------------------------------
+# Build output produced by build_oldxdk/build.sh
+# ---------------------------------------------------------------
+**/build_oldxdk/obj/
+**/build_oldxdk/logs/
+**/build_oldxdk/prof/
+**/build_oldxdk_prof/
+**/build_prof/
+**/psx___Win32_Debug/
+**/logs/
+
+# top-level release packages (contain built XBEs, skins, disc images)
+Projects/PlayStation 1 - PCSXBox/Release/
+
+# ---------------------------------------------------------------
+# Compiler / linker artefacts
+# (the vendored link inputs *.obj / *.lib under Projects/common
+#  are tracked on purpose -- do not broaden these patterns)
+# ---------------------------------------------------------------
+*.xbe
+*.exe
+*.map
+*.pdb
+*.ilk
+*.i64
+
+# ---------------------------------------------------------------
+# Visual Studio scratch
+# ---------------------------------------------------------------
+*.ncb
+*.opt
+*.aps
+*.plg
+*.sbr
+*.bsc
+*.idb
+*.suo
+*.user
+
+# ---------------------------------------------------------------
+# Never publish disc images, ROMs or BIOS dumps
+# ---------------------------------------------------------------
+*.chd
+*.iso
+*.img
+*.cue
+*.bin

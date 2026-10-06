@@ -1,0 +1,9 @@
+[PROJECT]
+BANKCOUNT=1
+[BANK0]
+BANKNAME=psxbank
+BANKFILE=psxbank.xwb
+HEADERFILE=psxbank.h
+ENTRYCOUNT=2
+ENTRY0=select,select.wav
+ENTRY1=linemove,linemove.wav

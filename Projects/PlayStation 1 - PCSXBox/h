@@ -1,0 +1,55 @@
+ Volume in drive C has no label.
+ Volume Serial Number is 50F9-E8BB
+
+ Directory of C:\Program Files\Microsoft Xbox SDK\Samples\xbox\video\psx
+
+10/09/2005  11:07a      <DIR>          .
+10/09/2005  11:07a      <DIR>          ..
+02/16/2003  05:14a               4,853 configuration.h
+02/28/2005  04:24p      <DIR>          Debug
+08/02/2003  04:56p                 159 Font.h
+04/03/2003  06:20p                 431 font.rdf
+05/01/2003  10:58a                 167 Font12.h
+04/03/2003  06:20p                 437 font12.rdf
+10/09/2005  11:07a                   0 h
+08/21/2002  08:05p               3,343 linemove.mp3
+06/19/2003  11:49p              18,478 linemove.wav
+02/28/2005  04:24p      <DIR>          Media
+02/28/2005  04:23p      <DIR>          newsrc
+02/28/2005  04:23p      <DIR>          newsrc2
+02/28/2005  04:23p      <DIR>          no
+02/28/2005  04:23p      <DIR>          oldxcore
+02/28/2005  04:23p      <DIR>          orig
+11/02/2004  12:01a             141,984 pcsxbox.cpp
+08/02/2003  08:32p              19,842 pcsxbox.dsp
+04/28/2003  09:19a                 539 pcsxbox.dsw
+11/02/2004  12:20a           1,248,256 pcsxbox.ncb
+08/21/2003  04:47p              86,016 pcsxbox.opt
+08/04/2003  05:40p               7,343 pcsxbox.plg
+09/30/2003  01:12p                 910 pcsxbox.sln
+11/01/2004  11:07p              19,558 pcsxbox.vcproj
+05/16/2003  12:28p               7,125 pcsxbox_v2.nfo
+05/14/2003  09:03a             340,723 pcsx_core_xbox_src.zip
+05/15/2003  07:38p               4,497 psx.cpp
+05/01/2003  06:25p              11,593 psx.dsp
+05/01/2003  03:23p                 531 psx.dsw
+05/15/2003  10:17p             443,392 psx.ncb
+05/15/2003  10:17p              57,856 psx.opt
+05/15/2003  07:53p                 240 psx.plg
+06/19/2003  11:50p                 166 psxbank.h
+06/19/2003  11:50p              62,328 psxbank.xwb
+06/19/2003  11:51p                 165 psxbank.xwp
+02/28/2005  04:23p      <DIR>          psx___Win32_Debug
+05/01/2003  03:23p               1,190 ReadMe.txt
+02/28/2005  04:24p      <DIR>          Release
+08/13/2002  07:27p               4,536 select.mp3
+06/19/2003  11:49p              43,822 select.wav
+10/29/2004  03:03p               8,927 SndXBOX.cxx
+05/02/2003  02:17p               2,962 SndXBOX.hxx
+02/28/2005  04:23p      <DIR>          src
+05/01/2003  03:23p                 290 StdAfx.cpp
+05/01/2003  03:23p                 769 StdAfx.h
+05/04/2003  08:16a              19,215 wnaspi32.h
+05/04/2000  09:47a              81,190 zlib.lib
+              36 File(s)      2,643,833 bytes
+              12 Dir(s)  40,100,646,912 bytes free
