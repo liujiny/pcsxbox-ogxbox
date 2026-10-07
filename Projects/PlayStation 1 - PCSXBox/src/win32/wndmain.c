@@ -130,7 +130,7 @@ int psx_WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, i
 								LoadState( xbox_get_statefile() ) ;
 								if ( xbox_oldstate == 0 )
 								{
-									recompilerErase() ;
+									//recompilerErase() ;	/* not implemented by every core; upstream v23 disables it too */
 								}
 							}
 							schedulestate = 0 ;

@@ -9,6 +9,11 @@
 **/psx___Win32_Debug/
 **/logs/
 
+# any per-core build output directory (build_oldxdk, build_oldxdk_15r, ...)
+# -- tracked files inside those dirs (build.sh, parse_vcproj.py, remap_core.py)
+#    stay tracked; .gitignore only hides new build products.
+**/build_oldxdk*/
+
 # top-level release packages (contain built XBEs, skins, disc images)
 Projects/PlayStation 1 - PCSXBox/Release/
 
@@ -45,3 +50,17 @@ Projects/PlayStation 1 - PCSXBox/Release/
 *.img
 *.cue
 *.bin
+
+# ---------------------------------------------------------------
+# Local experiment artefacts (edit backups, profiler dumps, scratch)
+# ---------------------------------------------------------------
+*.pre_*
+pcint.txt
+rec2.txt
+*.o
+*.SO
+*.dll
+*.so
+*.mcr
+*.res
+*.asm.bak

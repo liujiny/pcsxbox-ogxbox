@@ -19,7 +19,8 @@ export CORE
 case "$CORE" in
   15) CORE_DEF=()            ; CORESRC='src'          ; COREINC='src'          ; XBENAME=pcsxbox15.xbe ;;
   14) CORE_DEF=(OLDCORE)     ; CORESRC='src\good'     ; COREINC='src\good'     ; XBENAME=pcsxbox14.xbe ;;
-  16) CORE_DEF=(BETACORE)    ; CORESRC='src\1.6'      ; COREINC='src\1.6'      ; XBENAME=pcsxbox16.xbe ;;
+  16) CORE_DEF=(BETACORE)     ; CORESRC='src\1.6'      ; COREINC='src\1.6'      ; XBENAME=pcsxbox16.xbe ;;
+  15r|reloaded) CORE_DEF=(RELOADEDCORE) ; CORESRC='src\1.5 (Reloaded)' ; COREINC='src\1.5 (Reloaded)' ; XBENAME=pcsxbox15r.xbe ;;
   *) echo "unknown CORE=$CORE (use 14|15|16)"; exit 2 ;;
 esac
 
@@ -46,6 +47,10 @@ INCLUDES=(
   'src\gpu\src' 'src\gpu\src\fpse' '..\common\samba' '..\common\sdl'
   'src\chd' 'src\chd\libchdr\include' 'src\chd\libchdr\src'
 )
+# The 1.5 (Reloaded) core also needs a *fallback* `src` on the include path: its
+# own headers are referenced as "1.5 (Reloaded)\X.h" and psxbios.c pulls sjisfont.h
+# out of src\.  COREINC above is searched first, which is what we want.
+if [ "$CORE" = "15r" ] || [ "$CORE" = "reloaded" ]; then INCLUDES+=('src'); fi
 DEFINES=(WIN32 _USE_XGMATH _XBOX NDEBUG IS_LITTLE_ENDIAN __WIN32__ __i386__ 'PCSX_VERSION="1.4"' _SDL CHDR_SYSTEM_ZLIB)
 if [ "${#CORE_DEF[@]}" -gt 0 ]; then DEFINES+=("${CORE_DEF[@]}"); fi
 # Optional extra defines for diagnostics, e.g. EXTRA_DEFINE=PCSXBOX_SCREEN_DIAG
@@ -54,7 +59,13 @@ if [ -n "${EXTRA_DEFINE:-}" ]; then DEFINES+=("$EXTRA_DEFINE"); fi
 IFLAGS=(); for i in "${INCLUDES[@]}"; do IFLAGS+=("/I" "$i"); done
 DFLAGS=(); for d in "${DEFINES[@]}" "${DEFS_EXTRA[@]}"; do [ -n "$d" ] && DFLAGS+=("/D" "$d"); done
 
-objname() { echo "$1" | sed 's#\\#_#g; s#^[._]*##; s#\.\(c\|cpp\|cxx\)$##'; }
+objname() {
+  local b
+  b="$(printf '%s' "$1" | tr '\\ ()' '____')"
+  while [ "${b#[._]}" != "${b}" ]; do b="${b#?}"; done
+  b="${b%.c}"; b="${b%.cpp}"; b="${b%.cxx}"
+  printf '%s' "${b}"
+}
 
 # ---------------- worker: compile a single translation unit ----------------
 if [ "${1:-}" = "--worker" ]; then

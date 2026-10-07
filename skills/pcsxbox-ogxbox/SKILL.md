@@ -1,6 +1,6 @@
 ---
 name: pcsxbox-ogxbox
-description: 编译、实机调试与优化初代 Xbox（ogXbox）上的 PCSXBox PS1 模拟器。用于用老版 Microsoft XDK 构建 1.4/1.5/1.6 三核心 XBE、排查黑屏/死机/存档设置异常、加 CHD 之类新功能、以及做性能 A/B 与打包测试目录；不用于 RetroArch 主机移植，也不处理 ROM/BIOS 分发。
+description: 编译、实机调试与优化初代 Xbox（ogXbox）上的 PCSXBox PS1 模拟器。用于用老版 Microsoft XDK 构建 1.4/1.5/Reloaded/1.6 四核心 XBE、排查黑屏/死机/存档设置异常、加 CHD 之类新功能、以及做性能 A/B 与打包测试目录；不用于 RetroArch 主机移植，也不处理 ROM/BIOS 分发。
 ---
 
 # PCSXBox on the Original Xbox
@@ -14,7 +14,7 @@ description: 编译、实机调试与优化初代 Xbox（ogXbox）上的 PCSXBox
 
 先确认这次要做的是哪类工作，再读对应参考。**改动前先备份现有 XBE 和 `E:\SAVES\PCSXBOX`。**
 
-- 编译、工具链、三个核心怎么出、产物怎么命名 → [构建](references/build.md)
+- 编译、工具链、四个核心怎么出、产物怎么命名 → [构建](references/build.md)
 - 搞清楚哪个目录属于哪套版本、XBE 跳转逻辑 → [源码结构](references/source-tree.md)
 - 黑屏/死机/画面异常/存档被污染 → [调试](references/debugging.md)
 - 提升帧率、做 A/B、profiler 读数怎么解释 → [性能优化](references/optimization.md)
@@ -22,8 +22,9 @@ description: 编译、实机调试与优化初代 Xbox（ogXbox）上的 PCSXBox
 
 ## 工作原则
 
-三核心共用同一个前端 `pcsxbox.cpp`，靠 `CORE=` / 宏切换。改前端或 `src\psxcounters.c`
-一类共享文件时，**三份 core 目录必须同步**（`src`、`src\good`、`src\1.6`），否则就是
+四核心共用同一个前端 `pcsxbox.cpp`，靠 `CORE=` / 宏切换。改前端或 `src\psxcounters.c`
+一类共享文件时，**四份 core 目录必须同步**（`src`、`src\good`、`src\1.6`、
+`src\1.5 (Reloaded)`），否则就是
 "改了一个 XBE，实际跑的是另一个"。
 
 **绝对不要混用不同构建的 XBE，也不要用别的构建写过的 `.stg`。** 历史黑屏的原因就是

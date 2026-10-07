@@ -20,7 +20,8 @@
 ```bash
 CORE=15 JOBS=$(nproc) bash build_oldxdk/build.sh   # 1.5 前端+核心 -> pcsxbox15.xbe
 CORE=14 JOBS=$(nproc) bash build_oldxdk/build.sh   # 1.4 核心     -> pcsxbox14.xbe
-CORE=16 JOBS=$(nproc) bash build_oldxdk/build.sh   # 1.6/Reloaded -> pcsxbox16.xbe
+CORE=16 JOBS=$(nproc) bash build_oldxdk/build.sh   # 1.6 -> pcsxbox16.xbe
+CORE=15r OUTDIR=build_oldxdk_15r JOBS=$(nproc) bash build_oldxdk/build.sh  # Reloaded -> pcsxbox15r.xbe
 ```
 
 | 变量 | 含义 |
@@ -32,18 +33,25 @@ CORE=16 JOBS=$(nproc) bash build_oldxdk/build.sh   # 1.6/Reloaded -> pcsxbox16.x
 | `MODE` | `release`（默认）或 `debug` |
 | `EXTRA_DEFINE` | 追加一个 `-D`，用于诊断宏 |
 
-三核心全编大约十几秒（现代机器）。日志在 `$OUTDIR/logs/`，编译失败会**在链接前中止**。
+四核心全编大约几分钟（现代机器）。日志在 `$OUTDIR/logs/`，编译失败会**在链接前中止**。
 
-## 三个核心的映射
+## 四个核心的映射
 
 | CORE | 宏 | core 源码目录 | 输出 |
 |---|---|---|---|
 | 15 | （无） | `src` | `pcsxbox15.xbe` |
 | 14 | `OLDCORE` | `src\good` | `pcsxbox14.xbe` |
 | 16 | `BETACORE` | `src\1.6` | `pcsxbox16.xbe` |
+| 15r（`reloaded`） | `RELOADEDCORE` | `src\1.5 (Reloaded)` | `pcsxbox15r.xbe` |
 
-三个工程共用同一个 `pcsxbox.cpp` 前端。`parse_vcproj.py` 读出 `Release|Xbox` 配置的源文件
+四个工程共用同一个 `pcsxbox.cpp` 前端。`parse_vcproj.py` 读出 `Release|Xbox` 配置的源文件
 列表，`remap_core.py` 再把 `pcsxbox.vcproj` 里的目录重映射到目标 core 目录。
+
+`CORE=15r` 是唯一需要额外 include 路径的：它的头文件按 `"1.5 (Reloaded)\X.h"` 引用，
+`psxbios.c` 还会从 `src\` 拉 `sjisfont.h`，所以 `build.sh` 会再追加一条 `src`。
+它也会把 `src\gpu\src` / `src\spu\src` / `src\ix86` 整体换成 `1.5 (Reloaded)` 版本，
+**并且**多编 `cdriso.c`、`gte_divider.c`、`ppf.c`（SPU 侧 `externals.c`、`xa_new.c`）。
+建议给它单独的 `OUTDIR`（例如 `OUTDIR=build_oldxdk_15r`），否则会和其它核心抢同一份 obj。
 
 ## 编译/链接要点
 
@@ -67,14 +75,19 @@ INCLUDES = <XDK>\include ..\..\Common\include ..\common <coreinc> ..\common\mp3
 
 模拟器按固定文件名 chain-load 其它 XBE，所以投放时改名：
 
-| 编译产物 | 放成 |
-|---|---|
-| `pcsxbox15.xbe` | `default.xbe` |
-| `pcsxbox14.xbe` | `default14.xbe` |
-| `pcsxbox16.xbe` | `default16.xbe` |
+| 槽位 | 编译产物 | 放成 |
+|---|---|---|
+| 1.5 | `pcsxbox15.xbe` | `default.xbe` |
+| 1.4 | `pcsxbox14.xbe` | `default14.xbe` |
+| Reloaded | `pcsxbox15r.xbe` | `defaultr.xbe` |
+| 1.6 | `pcsxbox16.xbe` | `default16.xbe` |
 
-启动 `default.xbe`；游戏设置要求换核心时，`default.xbe` 会把自己交给 `default14.xbe`
-或 `default16.xbe`。历史发布版把 Reloaded 叫 `defaultr.xbe`，当前代码两个名字都会探测。
+启动 `default.xbe`；游戏设置要求换核心时，由 `pcsxbox.cpp` 的 `rgCoreXbe[4]`
+把自己交给 `default14.xbe` / `defaultr.xbe` / `default16.xbe`。
+`defaultr.xbe` 旧名 `reloaded.xbe` 也会探测。
 
-需要一个"编三个核心 + 装成测试目录"的一步脚本时，用
-`scripts/build_three_cores.sh`（见该脚本头部说明）。
+**要么四份齐全，要么一份伴生 XBE 都不要放**：跳到不存在的 XBE 会立刻黑屏死机，
+连 R3 菜单都出不来。
+
+需要一个"编四个核心 + 装成测试目录"的一步脚本时，用
+`scripts/build_all_cores.sh`（见该脚本头部说明）。

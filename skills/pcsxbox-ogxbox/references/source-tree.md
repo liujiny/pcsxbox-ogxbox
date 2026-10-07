@@ -26,8 +26,14 @@
 | `default14.xbe` | `.\src\good\plugins.c` | 1.4 |
 | `defaultr.xbe` | `.\src\1.6\plugins.c` | Reloaded |
 
-⇒ **`defaultr.xbe` = Reloaded = 源码里的 `src\1.6`**，不是另一个神秘目录。
-`default16.xbe` 只是当前开发树把 Reloaded 改名后的产物，不要再去找"缺失的 1.6 发布源码"。
+⇒ 历史发布版的 `defaultr.xbe`（Reloaded）是用 `src\1.6\` 这份源码编出来的，
+不是另一个神秘目录。
+
+**2026-10 更新**：当前开发树已经把上游 PCSXBox v23 的第四核心——真正独立的
+**Reloaded 核**（`RELOADEDCORE`）——移植进来了，源码在 `src\1.5 (Reloaded)\`，
+构建用 `CORE=15r`，产物 `pcsxbox15r.xbe` → `defaultr.xbe`。`src\1.6` 仍然是独立的
+1.6 核（`BETACORE` → `default16.xbe`）。两者**不是**同一份代码，四个核心可以共存：
+发布版那三个 XBE 的内嵌路径只说明**当年的发布版**怎么编的，不代表今天的目录含义。
 
 版本字符串对不上：
 
@@ -43,7 +49,8 @@
 |---|---|
 | `pcsxbox.cpp` + `src` | 前端 + 1.5 core，当前默认编译目标 |
 | `src\good` | 1.4 core（`OLDCORE`） |
-| `src\1.6` | 1.6 / Reloaded core（`BETACORE`） |
+| `src\1.6` | 1.6 core（`BETACORE`），产物 `default16.xbe` |
+| `src\1.5 (Reloaded)` | Reloaded core（`RELOADEDCORE`），产物 `defaultr.xbe`；`CORE=15r`，GPU/SPU/dynarec 分别在 `src\gpu\src\1.5 (Reloaded)` / `src\spu\src\1.5 (Reloaded)` / `src\ix86\1.5 (Reloaded)`，由 `build_oldxdk/remap_core.py` 重映射 |
 | `src\1.5_orig`、`orig`、`newsrc`、`newsrc2`、`no`、`gpu17` | 历史/对比快照，**不参与当前 .vcproj** |
 | `src\gpu\src112` / `src115` / `src116` / `src_beforemerge` / `src_good` | GPU 插件多版本快照；当前编译的是 `src\gpu\src` |
 | `oldxcore\` | 2009-02 的**独立旧工程**（自带 `pcsxbox.dsp` / `psx.dsp` / `.dsw`），不参与当前 .vcproj，**不是**任何发布 XBE 的构建来源。不要把它当答案 |
@@ -54,10 +61,17 @@
 `pcsxbox.cpp` 里 `doCDGame()` 附近的调度（行号随改动漂移，用 grep 定位）：
 
 ```c
-case 0 : /* 1.4  */  XLaunchNewImage("D:\\default14.xbe", &launchData); return;
-case 2 : /* 1.6  */  XLaunchNewImage("D:\\default16.xbe", &launchData); return;
-default: break;      /* core==1 -> 本进程继续 psx_WinMain() */
+static const char *rgCoreXbe[4] =
+{
+    "D:\\default14.xbe", "D:\\default.xbe",
+    "D:\\defaultr.xbe",  "D:\\default16.xbe"
+} ;
+/* slot 0=1.4  1=1.5(本进程)  2=Reloaded  3=1.6 ... */
 ```
+
+槽位表 `rgCoreXbe[4]` 与 `.stg` 里的 `m_psxfix_core_version` 一一对应：
+`0 → default14.xbe`、`1 → default.xbe`、`2 → defaultr.xbe`（旧名 `reloaded.xbe` 也会探测）、
+`3 → default16.xbe`。只有 `m_psxfix_core_version != PCSXBOX_DEFAULT_CORE` 时才跳转。
 
 每个游戏的 `.stg` 里存了 `m_psxfix_core_version`，所以**启动到哪个核心由该游戏设置决定**，
 不是全局开关。
@@ -69,5 +83,8 @@ default: break;      /* core==1 -> 本进程继续 psx_WinMain() */
    `defaultr.xbe`。这就是"把测试目录里除了 `default.xbe` 之外的 XBE 全删掉后一选游戏
    就死机"的原因。
 2. 只改了 `default.xbe` 的构建，跑起来可能根本不是它 —— 游戏 `.stg` 可能把你送去
-   `default14.xbe` / `default16.xbe`。做实验时要么三份整体替换，要么强制
-   `m_psxfix_core_version = 1` 并禁掉跳转。
+   `default14.xbe` / `defaultr.xbe` / `default16.xbe`。做实验时要么四份整体替换，
+   要么强制 `m_psxfix_core_version = 1` 并禁掉跳转。
+3. 反过来，**只放一份 `default.xbe`、不放任何伴生 XBE** 也危险：`.stg` 要求换核时
+   会跳到不存在的文件，表现为"一选游戏就黑屏、连 R3 菜单都出不来"。要么四份齐全，
+   要么把四个 `.stg` / 全局默认核心都钉在 1.5。

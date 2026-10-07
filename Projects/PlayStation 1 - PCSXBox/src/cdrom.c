@@ -84,6 +84,15 @@ unsigned char Test23[] = { 0x43, 0x58, 0x44, 0x32, 0x39 ,0x34, 0x30, 0x51 };
 #define btoi(b)		((b)/16*10 + (b)%16)		/* BCD to u_char */
 #define itob(i)		((i)/10*16 + (i)%10)		/* u_char to BCD */
 
+/* SubQ sector skew (in sectors) added to the emulated SubQ when answering
+   CdlGetlocP.  Captain Commando hardcodes a GetlocP query for a timecode
+   +2 sectors ahead of the sector it actually wants, so without this the
+   first-boss tiles are never uploaded.  Set to 0 to disable.
+   Reference: DuckStation SUBQ_SECTOR_SKEW, PCSX-ReARMed SUBQ_FORWARD_SECTORS. */
+#ifndef PCSXBOX_SUBQ_SKEW
+#define PCSXBOX_SUBQ_SKEW 1
+#endif
+
 static struct CdrStat stat;
 static struct SubQ *subq;
 
@@ -334,12 +343,32 @@ void cdrInterrupt() {
 		    	memcpy(cdr.Result+2, subq->TrackRelativeAddress, 3);
 		    	memcpy(cdr.Result+5, subq->AbsoluteAddress, 3);
 			} else {
+	        	/* SubQ sector skew.  Captain Commando spams GetlocP waiting for a timecode
+	        	   hardcoded +2 sectors ahead of the sector it really wants, then DMAs that
+	        	   sector out at the last moment.  Without the skew it never sees that
+	        	   timecode, keeps re-reading, and the first-boss tiles stay corrupt.
+	        	   Reference: DuckStation SUBQ_SECTOR_SKEW, PCSX-ReARMed SUBQ_FORWARD_SECTORS.
+	        	   cdr.Prev here is already one sector past the delivered sector, so
+	        	   PCSXBOX_SUBQ_SKEW = 1 makes GetlocP report (delivered sector + 2). */
+	        	int skew_mm = btoi(cdr.Prev[0]);
+	        	int skew_ss = btoi(cdr.Prev[1]);
+	        	int skew_ff = btoi(cdr.Prev[2]) + PCSXBOX_SUBQ_SKEW;
+	        	int rel_mm, rel_ss;
+
+	        	while (skew_ff >= 75) { skew_ff -= 75; skew_ss++; }
+	        	while (skew_ss >= 60) { skew_ss -= 60; skew_mm++; }
+
 	        	cdr.Result[0] = 1;
 	        	cdr.Result[1] = 1;
-	        	cdr.Result[2] = cdr.Prev[0];
-	        	cdr.Result[3] = itob((btoi(cdr.Prev[1])) - 2);
-	        	cdr.Result[4] = cdr.Prev[2];
-		    	memcpy(cdr.Result+5, cdr.Prev, 3);
+	        	rel_mm = skew_mm;
+	        	rel_ss = skew_ss - 2;   /* track-relative timecode = absolute - 2s lead-in */
+	        	if (rel_ss < 0) { rel_ss += 60; if (rel_mm > 0) rel_mm--; }
+	        	cdr.Result[2] = itob(rel_mm);
+	        	cdr.Result[3] = itob(rel_ss);
+	        	cdr.Result[4] = itob(skew_ff);
+	        	cdr.Result[5] = itob(skew_mm);
+	        	cdr.Result[6] = itob(skew_ss);
+	        	cdr.Result[7] = itob(skew_ff);
 			}
         	cdr.Stat = Acknowledge;
         	break;

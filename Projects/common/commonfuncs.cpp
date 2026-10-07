@@ -6118,6 +6118,58 @@ void CXBoxSample::doLoadSkin( char *skinname, int forceRoot )
 	szbuf = NULL ;
 	infile = NULL ;
 
+	// [pcsxbox-ogxbox] The configured/default skin name may point at a skin that is
+	// not present on this console (e.g. a leftover "pcsxboxBW-neverwill" default while
+	// only "PS-1-skin-by-opium2k" was shipped).  Left alone that leaves the menu with no
+	// background, sprites, sounds or font at all -- the skin simply "does not work".
+	// Fall back to the first skin directory under the skin dir that has a settings.ini.
+	if ( skinname == NULL || skinname[0] == 0 )
+	{
+		skinname = (char*)"" ;
+	}
+
+	{
+		char probeSkin[MAX_PATH] ;
+		DWORD dwAttr ;
+
+		sprintf( probeSkin, "%s\\%s\\settings.ini", m_szSkinDir, skinname ) ;
+		dwAttr = GetFileAttributes( probeSkin ) ;
+
+		if ( ( dwAttr == 0xFFFFFFFF ) && ( m_szSkinDir[0] ) )
+		{
+			WIN32_FIND_DATAA oFindData ;
+			HANDLE hFind ;
+			char skinRoot[MAX_PATH] ;
+
+			sprintf( skinRoot, "%s\\*", m_szSkinDir ) ;
+			hFind = FindFirstFile( skinRoot, &oFindData ) ;
+
+			if ( hFind != INVALID_HANDLE_VALUE )
+			{
+				do
+				{
+					if ( ! ( oFindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY ) )
+						continue ;
+					if ( oFindData.cFileName[0] == '.' )
+						continue ;
+
+					sprintf( probeSkin, "%s\\%s\\settings.ini", m_szSkinDir, oFindData.cFileName ) ;
+
+					if ( GetFileAttributes( probeSkin ) != 0xFFFFFFFF )
+					{
+						static char szFallbackSkin[MAX_PATH] ;
+						strcpy( szFallbackSkin, oFindData.cFileName ) ;
+						skinname = szFallbackSkin ;
+						break ;
+					}
+				}
+				while ( FindNextFile( hFind, &oFindData ) ) ;
+
+				FindClose( hFind ) ;
+			}
+		}
+	}
+
 
 
 	if ( ! forceRoot )

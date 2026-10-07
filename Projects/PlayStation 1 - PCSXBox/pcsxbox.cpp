@@ -143,6 +143,14 @@ unsigned int m_psxfix_rumble_enabled2=1 ;
 unsigned int m_psxfix_rumble1=0 ;
 unsigned int m_psxfix_rumble2=0 ;
 
+/* ---- PCSXBox v23 "1.5 (Reloaded)" core bridge (RELOADEDCORE) -------------
+   The Reloaded core is a straight port of the upstream v23 sources; these are
+   the few symbols it expects the shared front-end to provide.              */
+unsigned int psxfix_game_specific_hack = 0 ;
+unsigned int psxfix_xa_attenuatation   = 0 ;
+unsigned int m_xbox_bias               = 2 ;
+int          m_mouseX = 0, m_mouseY = 0, m_mouseButtons = 0 ;
+
 int LoadState(char *file) ;
 int SaveState(char *file) ;
 extern int Running;
@@ -175,7 +183,7 @@ void abortexec();
 #define CD_DATA_BUFFER_SIZE CD_BUF_SECTORS*2352
 #define MLINE(x) ((float)( 80 + (( pmenuParams->lineHeight-2 ) * (x)) ))
 #define PROJECTILE_DEF 4
-#define DEFAULT_SKIN "pcsxboxBW-neverwill"
+#define DEFAULT_SKIN "PS-1-skin-by-opium2k"
 #define DEFAULT_SKIN_DIR "D:\\EMUSKINS"
 #define DEFAULT_SAVE_PATH "E:\\SAVES\\PCSXBOX"
 
@@ -211,12 +219,48 @@ unsigned int  m_memory_sizes[] = { 0x200000 } ;
 
 #else
 
+#ifdef RELOADEDCORE
+
+#define PLATFORM_INI "pcsx.ini"
+#define MAIN_MENU_STRING L"PCSXbox 1.5 (Reloaded) Main Menu"
+
+#else
+
 #define PLATFORM_INI "pcsx.ini"
 #define MAIN_MENU_STRING L"PCSXbox 1.5 Main Menu"
+
+#endif //RELOADEDCORE
 
 #endif //BETACORE
 
 #endif //OLDCORE
+
+/* Which slot this binary occupies in the four-core menu.  Core 2 is the
+   Reloaded core; numbering follows the distribution XBE names
+   (0 = default14, 1 = default, 2 = defaultr, 3 = default16).  The per-game
+   .stg files store this value, so a game configured for a different core is
+   started by handing over to that core's XBE. */
+#ifdef OLDCORE
+#define PCSXBOX_DEFAULT_CORE 0
+#else
+#ifdef RELOADEDCORE
+#define PCSXBOX_DEFAULT_CORE 2
+#else
+#ifdef BETACORE
+#define PCSXBOX_DEFAULT_CORE 3
+#else
+#define PCSXBOX_DEFAULT_CORE 1
+#endif
+#endif
+#endif
+
+/* Savestates are core specific: loading a 1.4/1.5/1.6 state in the Reloaded
+   core (or vice versa) hangs the emulator, so give it its own extension. */
+#ifdef RELOADEDCORE
+#define PCSXBOX_STATE_EXT "tta"
+#else
+#define PCSXBOX_STATE_EXT "sta"
+#endif
 
 int m_isofd ;
 
@@ -753,6 +797,7 @@ public:
 	DWORD  m_bRealCD ;
 	DWORD  m_currentStartSector ;
 	unsigned char *m_ptrCdBuf ;
+	unsigned char *m_ptrCddaBuf ;
 	char m_cdromID[11];
 	DWORD m_bitDepth ;
 	DWORD m_lineHeight ;
@@ -773,6 +818,10 @@ public:
 	unsigned int m_psxfix_gpu_version;
 	unsigned int m_psxfix_spu_version;
 	unsigned int m_psxfix_core_version ;
+	unsigned int m_psxfix_spu_buff_size ;
+	unsigned int m_psxfix_speed_bump ;
+	unsigned int m_psxfix_Disable_Memslot2 ;
+	unsigned int m_auto_framelimit_on_mdec ;
 
 	unsigned int m_psxfix_VSyncWA ;
 	CXBSocket m_sockListener ;
@@ -1120,7 +1169,11 @@ void CXBoxSample::doLoadEmuSpecificIni( char *szbuf )
 	psxfix_ff9 = 0  ;
 	m_psxfix_gpu_version = 2 ;
 	m_psxfix_spu_version = 1 ;
-	m_psxfix_core_version = 1 ;
+	m_psxfix_core_version = PCSXBOX_DEFAULT_CORE ;
+	m_psxfix_spu_buff_size = 0 ;
+	m_psxfix_speed_bump = 0 ;
+	m_psxfix_Disable_Memslot2 = 0 ;
+	m_auto_framelimit_on_mdec = 0 ;
 	m_psxfix_memcard_state = 1 ;
 	m_psxfix_soundtimer = 0 ;
 	m_psxfix_controller1 = 0 ;
@@ -1772,7 +1825,7 @@ void CXBoxSample::emuLaunch( unsigned int gameSelected, unsigned int isFavorite,
 void CXBoxSample::doConfigureGame( char *settingsname, char *keysname )
 {
 	int menuChoice ;
-	char *cores[] = { "1.4", "1.5", "1.6" } ;
+	char *cores[] = { "1.4", "1.5", "1.5 (Reloaded)", "1.6" } ;
 	char *gpus[] = { "1.12", "1.15", "1.16" } ;
 	char *spus[] = { "1.6", "1.9" } ;
 
@@ -1789,7 +1842,7 @@ void CXBoxSample::doConfigureGame( char *settingsname, char *keysname )
 
 		swprintf( m_menuText[0], L"Game Configuration" );
 		swprintf( m_menuText[1], L"BIOS Mode : %S", m_biosMode ? "BIOS File" : "HLE" ) ;
-		swprintf( m_menuText[2], L"Core Version : %S", cores[m_psxfix_core_version] ) ;
+		swprintf( m_menuText[2], L"Core Version : %S", cores[ m_psxfix_core_version < 4 ? m_psxfix_core_version : PCSXBOX_DEFAULT_CORE ] ) ;
 		swprintf( m_menuText[3], L"GPU Plugin Version : %S", gpus[m_psxfix_gpu_version] ) ;
 		swprintf( m_menuText[4], L"SPU Plugin Version : %S", spus[m_psxfix_spu_version] ) ;
 		swprintf( m_menuText[5], L"Change memory cards"   );
@@ -1829,7 +1882,7 @@ void CXBoxSample::doConfigureGame( char *settingsname, char *keysname )
 			switch ( menuChoice )
 			{
 				case 0 : m_biosMode = !m_biosMode ; break ;
-				case 1 : m_psxfix_core_version = (m_psxfix_core_version+1)%3 ; break ;
+				case 1 : m_psxfix_core_version = (m_psxfix_core_version+1)%4 ; break ;
 				case 2 : m_psxfix_gpu_version = (m_psxfix_gpu_version+1)%3 ; break ;
 				case 3 : m_psxfix_spu_version = (m_psxfix_spu_version+1)%2 ; break ;
 				case 4 : doSelectMemcards() ; break ;
@@ -2154,7 +2207,7 @@ void CXBoxSample::doLoadNewDisk()
 
 		cht_save() ;
 
-		sprintf( g_statefile, "%s.sta", g_saveprefix ) ;
+		sprintf( g_statefile, "%s." PCSXBOX_STATE_EXT, g_saveprefix ) ;
 
 		if ( m_memcardnum1 < 10 )
 		{
@@ -2237,6 +2290,7 @@ void CXBoxSample::doLoadNewDisk()
 		}
 
 		m_ptrCdBuf = m_cdDataBuffer ;
+		m_ptrCddaBuf = m_cdDataBuffer ;
 		cdOpenCase = 1 ;
 	}
 
@@ -2331,7 +2385,11 @@ int CXBoxSample::loadSettings( char *filename )
 	m_psxfix_spu_dbuf = 0 ;
 	m_psxfix_gpu_version = 2 ;
 	m_psxfix_spu_version = 1 ;
-	m_psxfix_core_version = 1 ;
+	m_psxfix_core_version = PCSXBOX_DEFAULT_CORE ;
+	m_psxfix_spu_buff_size = 0 ;
+	m_psxfix_speed_bump = 0 ;
+	m_psxfix_Disable_Memslot2 = 0 ;
+	m_auto_framelimit_on_mdec = 0 ;
 	m_psxfix_memcard_state = 1 ;
 	m_psxfix_soundtimer = 0 ;
 	m_psxfix_controller1 = 0 ;
@@ -2374,6 +2432,9 @@ int CXBoxSample::loadSettings( char *filename )
 	fread( &m_psxfix_spu_version, sizeof(unsigned int), 1, setfile ) ;
 	fread( &g_psxFixFF, sizeof(unsigned int), 1, setfile ) ;
 	fread( &m_psxfix_core_version, sizeof(unsigned int), 1, setfile ) ;
+
+	if ( m_psxfix_core_version > 3 )		/* stale .stg from an older build */
+		m_psxfix_core_version = PCSXBOX_DEFAULT_CORE ;
 	fread( &m_nScreenX, sizeof(unsigned int), 1, setfile ) ;
 	fread( &m_nScreenY, sizeof(unsigned int), 1, setfile ) ;
 	fread( &m_nScreenMaxX, sizeof(unsigned int), 1, setfile ) ;
@@ -2679,7 +2740,7 @@ void CXBoxSample::doNetworkCDGame()
 	strcpy(g_chtfile, g_saveprefix);
 	strcat(g_chtfile, ".cht");
 
-	sprintf( g_statefile, "%s.sta", g_saveprefix ) ;
+	sprintf( g_statefile, "%s." PCSXBOX_STATE_EXT, g_saveprefix ) ;
 
 	strcpy( (char*)m_memcard1, g_saveprefix ) ;
 	m_memcard1[strlen((char*)m_memcard1)-1] = '0' + m_memcardnum1 ;
@@ -2755,6 +2816,7 @@ void CXBoxSample::doNetworkCDGame()
 
 	xbox_read_sector_type( 0, 1 ) ;
 	m_ptrCdBuf = m_cdDataBuffer ;
+	m_ptrCddaBuf = m_cdDataBuffer ;
 
 	psx_WinMain(NULL, NULL, NULL, 0) ;
 
@@ -3515,7 +3577,7 @@ void CXBoxSample::doCDGame( unsigned int fileSelected, unsigned int isFavorite, 
 	strcpy(g_chtfile, g_saveprefix);
 	strcat(g_chtfile, ".cht");
 
-	sprintf( g_statefile, "%s.sta", g_saveprefix ) ;
+	sprintf( g_statefile, "%s." PCSXBOX_STATE_EXT, g_saveprefix ) ;
 
 	if ( m_memcardnum1 < 10 )
 	{
@@ -3658,6 +3720,7 @@ void CXBoxSample::doCDGame( unsigned int fileSelected, unsigned int isFavorite, 
 	}
 
 	m_ptrCdBuf = m_cdDataBuffer ;
+	m_ptrCddaBuf = m_cdDataBuffer ;
 
 
 	m_plaything.FreeSprites() ;
@@ -3675,84 +3738,39 @@ void CXBoxSample::doCDGame( unsigned int fileSelected, unsigned int isFavorite, 
 	launchData.executionType = m_psxfix_core_version ;
 	injectGameConfig( &launchData ) ;
 
-#ifdef OLDCORE //1.4core
-
-
-	if ( g_autoLaunchGame )
+	/* Four cores: 0 = 1.4, 1 = 1.5, 2 = 1.5 (Reloaded), 3 = 1.6.  The per-game
+	   .stg decides which one should run the game; if that is not the core
+	   compiled into this XBE, relaunch into the matching XBE, otherwise just
+	   run the game here. */
 	{
-		m_psxfix_core_version = 0 ;
-	}
-	else
-	{
-		switch ( m_psxfix_core_version )
+		static const char *rgCoreXbe[4] =
 		{
-			case 1 :
-				if ( PCSXBoxXbePresent( "D:\\default.xbe" ) )
-					{ XLaunchNewImage( "D:\\default.xbe", (LAUNCH_DATA*)&launchData ); return ; }
-				break ;
-			case 2 :
-				if ( PCSXBoxXbePresent( "D:\\default16.xbe" ) )
-					{ XLaunchNewImage( "D:\\default16.xbe", (LAUNCH_DATA*)&launchData ); return ; }
-				if ( PCSXBoxXbePresent( "D:\\defaultr.xbe" ) )
-					{ XLaunchNewImage( "D:\\defaultr.xbe", (LAUNCH_DATA*)&launchData ); return ; }
-				break ;
-			default : break ;
+			"D:\\default14.xbe", "D:\\default.xbe",
+			"D:\\defaultr.xbe",  "D:\\default16.xbe"
+		} ;
+
+		if ( g_autoLaunchGame )
+		{
+			m_psxfix_core_version = PCSXBOX_DEFAULT_CORE ;
+		}
+		else if ( m_psxfix_core_version != PCSXBOX_DEFAULT_CORE && m_psxfix_core_version < 4 )
+		{
+			if ( PCSXBoxXbePresent( rgCoreXbe[m_psxfix_core_version] ) )
+			{
+				XLaunchNewImage( rgCoreXbe[m_psxfix_core_version], (LAUNCH_DATA*)&launchData ) ;
+				return ;
+			}
+
+			/* "defaultr.xbe" is the Reloaded core; a few v1.5 Plus packs
+			   shipped that same core under the name "reloaded.xbe". */
+			if ( m_psxfix_core_version == 2 && PCSXBoxXbePresent( "D:\\reloaded.xbe" ) )
+			{
+				XLaunchNewImage( "D:\\reloaded.xbe", (LAUNCH_DATA*)&launchData ) ;
+				return ;
+			}
 		}
 	}
 
-
-#else
-
-#ifdef BETACORE //1.6core
-
-	if ( g_autoLaunchGame )
-	{
-		m_psxfix_core_version = 2 ;
-	}
-	else
-	{
-		switch ( m_psxfix_core_version )
-		{
-			case 1 :
-				if ( PCSXBoxXbePresent( "D:\\default.xbe" ) )
-					{ XLaunchNewImage( "D:\\default.xbe", (LAUNCH_DATA*)&launchData ); return ; }
-				break ;
-			case 0 :
-				if ( PCSXBoxXbePresent( "D:\\default14.xbe" ) )
-					{ XLaunchNewImage( "D:\\default14.xbe", (LAUNCH_DATA*)&launchData ); return ; }
-				break ;
-			default : break ;
-		}
-	}
-
-#else //1.5core
-
-		//XLaunchNewImage( "D:\\pcsxbox.xbe", (LAUNCH_DATA*)&launchData ); return ;
-	if ( g_autoLaunchGame )
-	{
-		m_psxfix_core_version = 1 ;
-	}
-	else
-	{
-		switch ( m_psxfix_core_version )
-		{
-			case 0 :
-				if ( PCSXBoxXbePresent( "D:\\default14.xbe" ) )
-					{ XLaunchNewImage( "D:\\default14.xbe", (LAUNCH_DATA*)&launchData ); return ; }
-				break ;
-			case 2 :
-				if ( PCSXBoxXbePresent( "D:\\default16.xbe" ) )
-					{ XLaunchNewImage( "D:\\default16.xbe", (LAUNCH_DATA*)&launchData ); return ; }
-				if ( PCSXBoxXbePresent( "D:\\defaultr.xbe" ) )
-					{ XLaunchNewImage( "D:\\defaultr.xbe", (LAUNCH_DATA*)&launchData ); return ; }
-				break ;
-			default : break ;
-		}
-	}
-
-#endif //BETACORE
-
-#endif //OLDCORE
 
 	psx_WinMain(NULL, NULL, NULL, 0) ;
 
@@ -6137,7 +6155,7 @@ void CXBoxSample::initConsole( UINT32 idx, int forceUS, int whichCard, int force
 	strcpy(g_chtfile, g_saveprefix);
 	strcat(g_chtfile, ".cht");
 
-	sprintf( g_statefile, "%s.sta", g_saveprefix ) ;
+	sprintf( g_statefile, "%s." PCSXBOX_STATE_EXT, g_saveprefix ) ;
 
 	if ( g_bIsBoot )
 	{
@@ -6410,6 +6428,117 @@ unsigned int xbox_get_graphics_fixes()
 	return g_app->m_graphicsFixes ;
 }
 
+/* ---- Reloaded core (v23) front-end callbacks ------------------------- */
+
+unsigned int xbox_get_spu_buff_size()
+{
+	return g_app->m_psxfix_spu_buff_size ;
+}
+
+unsigned int xbox_get_speed_bump()
+{
+	return g_app->m_psxfix_speed_bump ? 8 : 1 ;
+}
+
+unsigned int xbox_disable_memslot2()
+{
+	return g_app->m_psxfix_Disable_Memslot2 ;
+}
+
+unsigned int xbox_get_auto_framelimit_on_mdec()
+{
+	return g_app->m_auto_framelimit_on_mdec ;
+}
+
+unsigned int xbox_get_cdda_sector()
+{
+	return g_app->m_cdda.m_currentSector*2352 ;
+}
+
+__int16 *xbox_cddabuffer()
+{
+	return (__int16*)(g_app->m_ptrCddaBuf)+12 ;
+}
+
+#ifndef DSBVOLUME_MIN
+#define DSBVOLUME_MIN (-10000)
+#endif
+
+void xbox_set_cdda_volume( int volume )
+{
+	int new_volume ;
+
+	if ( volume )		// > 32767 )
+		new_volume = ( 0 - ( 5500 - ( 5500 / (float)(65535.f/(float)volume) ) ) ) / 4 ;
+	else if ( volume > 0 )
+		new_volume = 0 - ( 2750 - (2750 / (float)(32767.f/(float)volume)) );
+	else
+		new_volume = DSBVOLUME_MIN ;
+
+	g_app->m_cdda.m_nVolume = new_volume ;	// 32767
+	g_app->m_cdda.adjust_volume ( 0 ) ;
+}
+
+/* Upstream v23 reads a debug mouse through XBInput_GetMouseInput() and maps the
+   pad thumbsticks onto it.  This port has no debug-mouse plumbing (mouse.cpp
+   is not part of the build), so the pad half of that contract is implemented
+   here and the mouse-device half is simply absent. */
+void xbox_read_mouse()
+{
+	int lmousedown = 0, rmousedown = 0, mmousedown = 0 ;
+
+	if ( g_Gamepads[0].hDevice )
+	{
+		if ( m_psxfix_controller1 == 3 )			// mouse -> right stick
+		{
+			if ( abs( g_Gamepads[0].sThumbRX ) > 9800 )
+				m_mouseX += (int)( g_Gamepads[0].sThumbRX/3000.0f ) ;
+
+			if ( abs( g_Gamepads[0].sThumbRY ) > 9800 )
+				m_mouseY -= (int)( g_Gamepads[0].sThumbRY/3000.0f ) ;
+		}
+		else										// lightgun -> left stick
+		{
+			if ( abs( g_Gamepads[0].sThumbLX ) > 9800 )
+				m_mouseX += (int)( g_Gamepads[0].sThumbLX/3000.0f ) ;
+
+			if ( abs( g_Gamepads[0].sThumbLY ) > 9800 )
+				m_mouseY -= (int)( g_Gamepads[0].sThumbLY/3000.0f ) ;
+		}
+
+		if ( g_app->m_emuControllers[0] & JOY_CROSS )
+			lmousedown = 1 ;
+
+		if ( g_app->m_emuControllers[0] & JOY_CIRCLE )
+			rmousedown = 1 ;
+
+		if ( g_app->m_emuControllers[0] & JOY_TRIANGLE )
+			mmousedown = 1 ;
+	}
+
+	if ( m_psxfix_controller1 == 3 )				// mouse
+	{
+		if ( m_mouseX < -128 ) m_mouseX = -128 ;
+		if ( m_mouseY < -128 ) m_mouseY = -128 ;
+		if ( m_mouseX >  127 ) m_mouseX =  127 ;
+		if ( m_mouseY >  127 ) m_mouseY =  127 ;
+
+		m_mouseButtons = ( lmousedown ? 4 : 0 ) | ( rmousedown ? 8 : 0 ) ;
+	}
+	else											// guncon / lightgun
+	{
+		if ( m_mouseX < 0 ) m_mouseX = 0 ;
+		if ( m_mouseY < 0 ) m_mouseY = 0 ;
+		if ( m_mouseX > 384 ) m_mouseX = 384 ;
+		if ( m_mouseY > 240 ) m_mouseY = 240 ;
+
+		if ( m_psxfix_controller1 == 4 )
+			m_mouseButtons = ( lmousedown ? 0x20 : 0 ) | ( rmousedown ? 0x08 : 0 ) | ( mmousedown ? 0x40 : 0 ) ;
+		else
+			m_mouseButtons = ( lmousedown ? 0x80 : 0 ) | ( rmousedown ? 0x40 : 0 ) | ( mmousedown ? 0x08 : 0 ) ;
+	}
+}
+
 void xbox_clear_screen()
 {
 	g_app->ClearScreen() ;
@@ -6605,6 +6734,10 @@ int xbox_read_sector_type( unsigned int sector, unsigned int sector_type )
 	}
 */
 	g_app->m_ptrCdBuf = g_app->m_cdDataBuffer + ((sector-g_app->m_currentStartSector)*2352) ;
+
+	/* This port keeps a single CD data buffer, so CDDA reads land in the very
+	   same window; point the Reloaded core's CDDA view at it as well. */
+	g_app->m_ptrCddaBuf = g_app->m_ptrCdBuf ;
 
 /*
 	for ( int ii = 0 ; ii < 16 ; ii++ )
