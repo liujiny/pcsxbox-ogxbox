@@ -1,0 +1,4 @@
+interface:
+  display_name: "PCSXBox 初代 Xbox 构建与调试"
+  short_description: "老 XDK 编译三核心 XBE、实机调试与性能 A/B"
+  default_prompt: "使用 $pcsxbox-ogxbox 编译并验证 PCSXBox 的 ogXbox 版本。"

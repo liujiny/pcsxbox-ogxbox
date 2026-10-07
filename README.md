@@ -142,6 +142,16 @@ fast path. An escape hatch is provided: compile with
 
 ---
 
+## Codex skill
+
+`skills/pcsxbox-ogxbox/` packages the rebuild, debugging and optimisation knowledge
+of this repository as a [Codex skill](https://github.com/openai/codex), so an agent
+can pick it up without re-deriving it. It routes to focused references (build,
+source tree, debugging, optimisation, per-game config) and ships
+`scripts/build_three_cores.sh`, which builds all three cores and assembles a
+`default.xbe` / `default14.xbe` / `default16.xbe` test folder with a SHA256SUMS
+file. See `skills/README.md`.
+
 ## What is deliberately *not* in this repository
 
 * **BIOS dumps** (`scph1001.bin`, ...) — copyrighted, not redistributable.
